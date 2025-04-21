@@ -1,24 +1,14 @@
-const targetName = "Yeremia";
-const populationSize = 100;
-const mutationRate = 0.01;
+const DEFAULT_TARGET_NAME = "Yeremia";
+const DEFAULT_POPULATION_SIZE = 100;
+const DEFAULT_MUTATION_RATE = 0.01;
+const CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-function randomIndividual(length) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    let individual = "";
-    for (let i = 0; i < length; i++) {
-        individual += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return individual;
+function randomIndividual(length, chars = CHARACTERS) {
+    return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join("");
 }
 
-function calculateFitness(individual) {
-    let score = 0;
-    for (let i = 0; i < individual.length; i++) {
-        if (individual[i] === targetName[i]) {
-            score++;
-        }
-    }
-    return score / targetName.length;
+function calculateFitness(individual, targetName) {
+    return individual.split("").reduce((score, char, i) => score + (char === targetName[i] ? 1 : 0), 0) / targetName.length;
 }
 
 function crossover(parent1, parent2) {
@@ -26,30 +16,18 @@ function crossover(parent1, parent2) {
     return parent1.slice(0, midpoint) + parent2.slice(midpoint);
 }
 
-function mutate(individual) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    let mutated = "";
-    for (let i = 0; i < individual.length; i++) {
-        if (Math.random() < mutationRate) {
-            mutated += chars.charAt(Math.floor(Math.random() * chars.length));
-        } else {
-            mutated += individual[i];
-        }
-    }
-    return mutated;
+function mutate(individual, mutationRate = DEFAULT_MUTATION_RATE, chars = CHARACTERS) {
+    return individual
+        .split("")
+        .map(char => (Math.random() < mutationRate ? chars.charAt(Math.floor(Math.random() * chars.length)) : char))
+        .join("");
 }
 
 function geneticAlgorithm() {
     const targetNameInput = document.getElementById("targetNameInput").value.trim();
-    const targetName = targetNameInput || "Yeremia";
-    const populationSize = 100;
-    const mutationRate = 0.01;
+    const targetName = targetNameInput || DEFAULT_TARGET_NAME;
 
-    let population = [];
-    for (let i = 0; i < populationSize; i++) {
-        population.push(randomIndividual(targetName.length));
-    }
-
+    let population = Array.from({ length: DEFAULT_POPULATION_SIZE }, () => randomIndividual(targetName.length));
     let generation = 0;
     let found = false;
 
@@ -60,49 +38,32 @@ function geneticAlgorithm() {
         generation++;
         const fitnessScores = population.map(individual => ({
             individual,
-            fitness: calculateFitness(individual, targetName)
+            fitness: calculateFitness(individual, targetName),
         }));
 
         fitnessScores.sort((a, b) => b.fitness - a.fitness);
 
         if (fitnessScores[0].fitness === 1) {
             found = true;
-            const generationElement = document.createElement("div");
-            generationElement.textContent = `Generasi ${generation}: ${fitnessScores[0].individual} (Selesai!)`;
-            output.appendChild(generationElement);
+            output.innerHTML += `Generasi ke-${generation}: ${fitnessScores[0].individual} (Selesai!)\n`;
             break;
         }
 
-        const generationElement = document.createElement("div");
-        generationElement.textContent = `Generasi ${generation}: ${fitnessScores[0].individual}`;
-        output.appendChild(generationElement);
+        output.innerHTML += `Generasi ke-${generation}: ${fitnessScores[0].individual}\n`;
 
-        const matingPool = fitnessScores.slice(0, populationSize / 2);
+        const matingPool = fitnessScores.slice(0, DEFAULT_POPULATION_SIZE / 2);
 
-        population = [];
-        for (let i = 0; i < populationSize; i++) {
+        population = Array.from({ length: DEFAULT_POPULATION_SIZE }, () => {
             const parent1 = matingPool[Math.floor(Math.random() * matingPool.length)].individual;
             const parent2 = matingPool[Math.floor(Math.random() * matingPool.length)].individual;
-            let offspring = crossover(parent1, parent2);
-            offspring = mutate(offspring);
-            population.push(offspring);
-        }
+            return mutate(crossover(parent1, parent2));
+        });
     }
 }
-
-function calculateFitness(individual, targetName) {
-    let score = 0;
-    for (let i = 0; i < individual.length; i++) {
-        if (individual[i] === targetName[i]) {
-            score++;
-        }
-    }
-    return score / targetName.length;
-}
-
-document.getElementById("startButton").addEventListener("click", geneticAlgorithm);
 
 function validateInput() {
     const input = document.getElementById("targetNameInput");
     input.value = input.value.replace(/[^a-zA-Z]/g, "");
 }
+
+document.getElementById("startButton").addEventListener("click", geneticAlgorithm);
